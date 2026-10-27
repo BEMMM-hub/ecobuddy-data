@@ -41,6 +41,7 @@ function samenvatting(t) {
       const btw = c.vat !== undefined && c.vat !== null && Number.isFinite(getal(c.vat)) ? getal(c.vat) : null;
       if (btw !== null) s.b = 1;
       s[veld] = rond(prijs * (1 + (btw ?? BTW) / 100));
+      if (veld === 'e') { s.x = rond(prijs); if (btw !== null) s.w = btw; } // ruwe prijs per kWh en btw zoals de exploitant ze opgeeft
     }
   }
   if (s.e === undefined && s.u === undefined && s.f === undefined) return null;
