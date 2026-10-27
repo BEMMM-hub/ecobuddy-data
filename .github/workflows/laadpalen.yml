@@ -2,7 +2,12 @@ name: Laadpalen bijwerken
 on:
   schedule:
     - cron: '23 */4 * * *'   # elke 4 uur
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      controle:
+        description: 'Laadpaal-id''s (komma''s) om de ruwe gegevens van te bewaren in controle.json'
+        required: false
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -16,6 +21,8 @@ jobs:
           node-version: 22
       - name: Tegels bouwen
         run: node --max-old-space-size=6000 scripts/bouw.mjs uit
+        env:
+          CONTROLE: ${{ github.event.inputs.controle }}
       - name: Op de tak "data" zetten
         run: |
           cd uit

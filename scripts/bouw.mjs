@@ -45,6 +45,10 @@ function samenvatting(t) {
   }
   if (s.e === undefined && s.u === undefined && s.f === undefined) return null;
   if (t.currency && t.currency !== 'EUR') s.v = t.currency;
+  // Omschrijving van de exploitant zelf (OCPI tariff_alt_text), liefst Nederlands, kort
+  const alt = Array.isArray(t.tariff_alt_text) ? (t.tariff_alt_text.find((x) => x.language === 'nl') ?? t.tariff_alt_text[0]) : null;
+  if (alt?.text) s.t = String(alt.text).slice(0, 160);
+  if (t.last_updated) s.d = String(t.last_updated).slice(0, 10);
   return s;
 }
 
@@ -102,6 +106,19 @@ for (const f of features) {
     c: [rond(lon, 5), rond(lat, 5)],
     k,
   });
+}
+
+// Controle: ruwe gegevens van gekozen locaties, om prijzen na te kunnen lopen (CONTROLE="id1,id2")
+const controleIds = (process.env.CONTROLE || '').split(',').map((x) => x.trim()).filter(Boolean);
+if (controleIds.length) {
+  const ruweTarieven = new Map(tarieven.map((t) => [`${t.party_id}|${t.id}`, t]));
+  const controle = features.filter((f) => controleIds.includes(f.id)).map((f) => ({
+    laadpaal: f,
+    tarieven: (f.properties?.availabilities ?? []).flatMap((a) => a.tariff_ids ?? []).map((id) => ruweTarieven.get(`${f.properties.cpo_id}|${id}`) ?? { id, fout: 'niet gevonden' }),
+  }));
+  mkdirSync(uit, { recursive: true });
+  writeFileSync(`${uit}/controle.json`, JSON.stringify(controle, null, 2));
+  console.log(`Controle: ${controle.length} locaties`);
 }
 
 mkdirSync(`${uit}/tegels`, { recursive: true });
