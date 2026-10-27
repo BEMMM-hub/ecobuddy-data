@@ -1,0 +1,26 @@
+name: Laadpalen bijwerken
+on:
+  schedule:
+    - cron: '23 */4 * * *'   # elke 4 uur
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  bouw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Tegels bouwen
+        run: node --max-old-space-size=6000 scripts/bouw.mjs uit
+      - name: Op de tak "data" zetten
+        run: |
+          cd uit
+          git init -q
+          git checkout -q -b data
+          git add .
+          git -c user.name="EcoBuddy" -c user.email="actions@users.noreply.github.com" commit -qm "Laadpalen $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
