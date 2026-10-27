@@ -6,6 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const GEO = 'https://opendata.ndw.nu/charging_point_locations.geojson.gz';
 const TAR = 'https://opendata.ndw.nu/charging_point_tariffs_ocpi.json.gz';
+const LOC = 'https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz';
 const uit = process.argv[2] || 'uit';
 const BTW = 21;
 
@@ -72,6 +73,34 @@ for (const t of tarieven) {
 }
 console.log(`Bruikbare tarieven: ${perId.size / 2 | 0}, waarvan ad hoc: ${adHoc}`);
 
+// Toegankelijkheid uit de OCPI-locaties: soort parkeerplek, openingstijden en of het alleen voor klanten is
+const toegang = new Map(); // "PARTIJ|locatie-id" -> { g, o, kl }
+const telling = { parkeren: {}, alleenKlanten: 0, niet247: 0, locaties: 0 };
+try {
+  const locRuw = await lees(LOC, process.env.LOC_BESTAND);
+  const locs = Array.isArray(locRuw) ? locRuw : locRuw.data ?? locRuw.locations ?? [];
+  telling.locaties = locs.length;
+  if (locs[0]) console.log('Voorbeeld OCPI-locatie:', JSON.stringify(locs[0]).slice(0, 1200));
+  const G = { ON_STREET: 's', ALONG_MOTORWAY: 's', PARKING_LOT: 'l', PARKING_GARAGE: 'p', UNDERGROUND_GARAGE: 'p', ON_DRIVEWAY: 'd' };
+  for (const l of locs) {
+    const pt = l.parking_type ?? 'ONBEKEND';
+    telling.parkeren[pt] = (telling.parkeren[pt] ?? 0) + 1;
+    const kl = (l.evses ?? []).some((e) => (e.parking_restrictions ?? []).includes('CUSTOMERS'));
+    const o = l.opening_times ? (l.opening_times.twentyfourseven === false ? 0 : 1) : 1;
+    if (kl) telling.alleenKlanten++;
+    if (!o) telling.niet247++;
+    toegang.set(`${l.party_id}|${l.id}`, { g: G[pt] ?? '', o, kl: kl ? 1 : 0 });
+  }
+} catch (e) {
+  console.log('OCPI-locaties niet gelukt:', e.message);
+}
+// GeoJSON-id is "NL-<partij>-<locatie-id>" (het locatie-id kan zelf streepjes hebben)
+const toegangVan = (id) => {
+  const [, partij, ...rest] = String(id).split('-');
+  return toegang.get(`${partij}|${rest.join('-')}`) ?? null;
+};
+let gekoppeld = 0;
+
 const features = geo.features ?? [];
 if (features[0]) console.log('Voorbeeld laadpaal:', JSON.stringify(features[0]).slice(0, 800));
 const tegels = new Map();
@@ -100,7 +129,10 @@ for (const f of features) {
   if (!k.length) continue;
   const sleutel = `${Math.floor(lat * 10)}_${Math.floor(lon * 10)}`;
   if (!tegels.has(sleutel)) tegels.set(sleutel, []);
+  const tg = toegangVan(f.id);
+  if (tg) gekoppeld++;
   tegels.get(sleutel).push({
+    ...(tg ? { g: tg.g, ...(tg.o ? {} : { open: 0 }), ...(tg.kl ? { kl: 1 } : {}) } : {}),
     id: f.id,
     o: p.operator_name ?? p.owner_name ?? p.cpo_id ?? '',
     a: p.address ?? '',
@@ -130,6 +162,8 @@ const meta = {
   tegels: tegels.size,
   laadpunten: palen,
   laadpuntenMetPrijs: metPrijs,
+  toegangGekoppeld: gekoppeld,
+  toegang: telling,
   bron: 'NDW DOT-NL (opendata.ndw.nu), ad-hoc prijzen volgens AFIR',
 };
 writeFileSync(`${uit}/meta.json`, JSON.stringify(meta, null, 2));
