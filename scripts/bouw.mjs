@@ -75,6 +75,7 @@ console.log(`Bruikbare tarieven: ${perId.size / 2 | 0}, waarvan ad hoc: ${adHoc}
 
 // Toegankelijkheid uit de OCPI-locaties: soort parkeerplek, openingstijden en of het alleen voor klanten is
 const toegang = new Map(); // "PARTIJ|locatie-id" -> { g, o, kl }
+const ruweLocaties = new Map(); // alleen voor controle
 const telling = { parkeren: {}, alleenKlanten: 0, niet247: 0, locaties: 0 };
 try {
   const locRuw = await lees(LOC, process.env.LOC_BESTAND);
@@ -90,6 +91,7 @@ try {
     if (kl) telling.alleenKlanten++;
     if (!o) telling.niet247++;
     toegang.set(`${l.party_id}|${l.id}`, { g: G[pt] ?? '', o, kl: kl ? 1 : 0 });
+    if (process.env.CONTROLE && process.env.CONTROLE.includes(String(l.id))) ruweLocaties.set(`${l.party_id}|${l.id}`, l);
   }
 } catch (e) {
   console.log('OCPI-locaties niet gelukt:', e.message);
@@ -147,6 +149,7 @@ if (controleIds.length) {
   const ruweTarieven = new Map(tarieven.map((t) => [`${t.party_id}|${t.id}`, t]));
   const controle = features.filter((f) => controleIds.includes(f.id)).map((f) => ({
     laadpaal: f,
+    ocpi: (() => { const [, partij, ...rest] = String(f.id).split('-'); return ruweLocaties.get(`${partij}|${rest.join('-')}`) ?? null; })(),
     tarieven: (f.properties?.availabilities ?? []).flatMap((a) => a.tariff_ids ?? []).map((id) => ruweTarieven.get(`${f.properties.cpo_id}|${id}`) ?? { id, fout: 'niet gevonden' }),
   }));
   mkdirSync(uit, { recursive: true });
