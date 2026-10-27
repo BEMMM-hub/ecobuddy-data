@@ -90,7 +90,11 @@ try {
     const o = l.opening_times ? (l.opening_times.twentyfourseven === false ? 0 : 1) : 1;
     if (kl) telling.alleenKlanten++;
     if (!o) telling.niet247++;
-    toegang.set(`${l.party_id}|${l.id}`, { g: G[pt] ?? '', o, kl: kl ? 1 : 0 });
+    // Geen soort opgegeven? Dan de naam van de locatie: "Garage P1", "Parkeergarage", "Q-Park" enz.
+    const naam = String(l.name ?? '');
+    const garage = /garage|parkeer|parking|\bP\s?\d{1,2}\b|P\s?\+\s?R|q-park|interparking|apcoa|indigo|kelder/i.test(naam);
+    const g = G[pt] ?? (garage ? 'p' : '');
+    toegang.set(`${l.party_id}|${l.id}`, { g, o, kl: kl ? 1 : 0, nm: naam.slice(0, 60) });
     if (process.env.CONTROLE && process.env.CONTROLE.includes(String(l.id))) ruweLocaties.set(`${l.party_id}|${l.id}`, l);
   }
 } catch (e) {
@@ -134,7 +138,7 @@ for (const f of features) {
   const tg = toegangVan(f.id);
   if (tg) gekoppeld++;
   tegels.get(sleutel).push({
-    ...(tg ? { g: tg.g, ...(tg.o ? {} : { open: 0 }), ...(tg.kl ? { kl: 1 } : {}) } : {}),
+    ...(tg ? { g: tg.g, nm: tg.nm, ...(tg.o ? {} : { open: 0 }), ...(tg.kl ? { kl: 1 } : {}) } : {}),
     id: f.id,
     o: p.operator_name ?? p.owner_name ?? p.cpo_id ?? '',
     a: p.address ?? '',
