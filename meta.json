@@ -1,0 +1,23 @@
+{
+  "gebouwd": "2026-11-07T16:56:44.003Z",
+  "locaties": 74840,
+  "tegels": 601,
+  "laadpunten": 192594,
+  "laadpuntenMetPrijs": 177148,
+  "toegangGekoppeld": 74840,
+  "toegang": {
+    "parkeren": {
+      "ON_STREET": 27383,
+      "ONBEKEND": 43907,
+      "PARKING_LOT": 2985,
+      "PARKING_GARAGE": 420,
+      "ALONG_MOTORWAY": 22,
+      "UNDERGROUND_GARAGE": 73,
+      "ON_DRIVEWAY": 50
+    },
+    "alleenKlanten": 1546,
+    "niet247": 229,
+    "locaties": 74840
+  },
+  "bron": "NDW DOT-NL (opendata.ndw.nu), ad-hoc prijzen volgens AFIR"
+}
