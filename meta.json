@@ -1,0 +1,23 @@
+{
+  "gebouwd": "2026-11-28T16:58:14.274Z",
+  "locaties": 75192,
+  "tegels": 599,
+  "laadpunten": 192530,
+  "laadpuntenMetPrijs": 158639,
+  "toegangGekoppeld": 75192,
+  "toegang": {
+    "parkeren": {
+      "ONBEKEND": 42796,
+      "ON_STREET": 28770,
+      "PARKING_LOT": 3041,
+      "PARKING_GARAGE": 440,
+      "ALONG_MOTORWAY": 22,
+      "ON_DRIVEWAY": 49,
+      "UNDERGROUND_GARAGE": 74
+    },
+    "alleenKlanten": 1570,
+    "niet247": 232,
+    "locaties": 75192
+  },
+  "bron": "NDW DOT-NL (opendata.ndw.nu), ad-hoc prijzen volgens AFIR"
+}
